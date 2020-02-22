@@ -1,0 +1,41 @@
+saga-server:
+  inMemory: true
+  secured: true
+  username: admin
+  password: admin
+  connectTimeOut: 30000
+  readTimeOut: 30000
+  recovery:
+    enabled: false
+    pollingInterval: 10000
+    age: 30000
+  cleanup:
+    enabled: false
+    pollingInterval: 10000
+spring:
+  application:
+    name: saga-server
+  profiles:
+    active:
+    - all
+management:
+  endpoints:
+    web:
+      exposure: 
+        include: env
+server:
+  port: 9000
+  error:
+    whitelabel:
+      enabled: false
+zookeeper:
+  address: localhost:2181
+eureka:
+  client:
+    enabled: true
+    registerWithEureka: true
+  instance:
+    metadata-map:
+      instanceId: ${spring.application.name}:${spring.application.instance_id:${random.value}}
+    instanceId: ${spring.application.name}:${spring.application.instance_id:${random.value}}
+    prefer-ip-address: true

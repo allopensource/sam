@@ -1,0 +1,200 @@
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+<div th:fragment="header-js">
+	<link rel="stylesheet"
+		href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css"
+		integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB"
+		crossorigin="anonymous" />
+	<link
+		href="https://cdnjs.cloudflare.com/ajax/libs/fullPage.js/2.9.7/jquery.fullpage.css"
+		rel="stylesheet" />
+	<!-- <link rel="stylesheet"
+		href="https://use.fontawesome.com/releases/v5.0.13/css/all.css"
+		integrity="sha384-DNOHZ68U8hZfKXOrtjWvjxusGo9WQnrNx2sqG0tfsghAvtVlRW3tvkXWZh58N9jp"
+		crossorigin="anonymous" / -->
+	<link
+		href="https://fonts.googleapis.com/css?family=Anton|Ubuntu|Raleway|Abel"
+		rel="stylesheet" />
+
+	<script src="https://code.jquery.com/jquery-3.3.1.js"
+		integrity="sha256-2Kok7MbOyxpgUVvAk/HJ2jigOSYS2auK4Pfzbm7uH60="
+		crossorigin="anonymous"></script>
+	<!-- needed for dropdowns bootstrap-->
+	<script
+		src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"
+		integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49"
+		crossorigin="anonymous"></script>
+	<script
+		src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js"
+		integrity="sha384-smHYKdLADwkXOn1EmN1qk/HfnUcbVRZyYmZ4qpPea6sjB/pTJ0euyQp0Mk8ck+5T"
+		crossorigin="anonymous"></script>
+	<script
+		src="https://cdnjs.cloudflare.com/ajax/libs/fullPage.js/2.9.7/jquery.fullpage.js"></script>
+	<style type="text/css">
+.fa-plus-circle {
+	color: #26A65B;
+}
+</style>
+	<script>
+		var xhrPool = [];
+		$(document).ready(function() {
+			fullpageJS.setup();
+			commonJS.ajaxSetup();
+		});
+
+		var commonJS = {
+			ajaxSetup : function() {
+				$.ajaxSetup({
+					beforeSend : function(jqXHR) {
+						var token = commonJS.readCookie("XSRF-TOKEN");
+						jqXHR.setRequestHeader('X-XSRF-TOKEN', token);
+						xhrPool.push(jqXHR); //  annd connection to list
+					},
+
+					complete : function(jqXHR) {
+						var i = xhrPool.indexOf(jqXHR); //  get index for current connection completed
+						if (i > -1)
+							xhrPool.splice(i, 1); //  removes from list by index
+					}
+				});
+			},
+
+			readCookie : function(name) {
+				var nameEQ = name + "=";
+				var ca = document.cookie.split(';');
+				for (var i = 0; i < ca.length; i++) {
+					var c = ca[i];
+					while (c.charAt(0) == ' ')
+						c = c.substring(1, c.length);
+					if (c.indexOf(nameEQ) == 0)
+						return c.substring(nameEQ.length, c.length);
+				}
+				return null;
+			}
+		};
+		var fullpageJS = {
+			setup : function() {
+				$('#fullpage').fullpage(
+						{
+							menu : '#menu',
+							anchors : [ 'firstPage', 'secondPage', 'thirdPage',
+									'fourthPage' ],
+							navigation : true
+						});
+			}
+		};
+	</script>
+</div>
+</head>
+<body>
+	<div th:fragment="header">
+		<div id="navbar" class="topnav">
+			<div id="menu">
+				<!-- 			<a data-menuanchor="firstPage" href="#firstPage" class="skip active"
+					onclick="">Home</a> <a data-menuanchor="secondPage"
+					href="#secondPage" onclick="">Services</a> <a
+					data-menuanchor="thirdPage" href="#thirdPage" onclick="">About</a>
+				<a data-menuanchor="fourthPage" href="#fourthPage" onclick="">Contact
+					& Support</a> -->
+			</div>
+		</div>
+	</div>
+	<div id="fullpage">
+		<div class="section" style="background: #F7CA18;">
+			<div class="row" style="background-color: #ECF0F1; height: 30%;">
+				<div class="col-lg-2"></div>
+				<div class="col-lg-8"
+					style="font-family: 'Anton', serif; letter-spacing: -2px; font-size: 500%; text-align: center; margin-top: 10px">
+					TxAAS : Transaction As a Service <br> <sub>Using SAGA
+						Pattern</sub>
+				</div>
+				<div class="col-lg-2"></div>
+			</div>
+		</div>
+		<div class="section">
+			<div class="row">
+				<div class="col-sm-12 col-xs-12">
+					<div class="card">
+						<div class="card-body">
+							<h5 class="card-title">What is Saga design pattern?</h5>
+							<h6 class="card-subtitle mb-2 text-muted">The Saga Pattern</h6>
+							<p class="card-text">One of the most well-known patterns for
+								distributed transactions is called Saga. The first paper about
+								it was published back in 1987, and it has been a popular
+								solution since then. A Saga is a sequence of local transactions
+								where each transaction updates data within a single service</p>
+							<a href="https://en.wikipedia.org/wiki/Compensating_transaction"
+								class="card-link">Wikepedia</a>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-sm-12 col-xs-12"
+					style="margin-left: 20px; margin-top: 50px;">
+					<h4>Our problem statement :</h4>
+					To develop SAGA pattern into a Transaction as a Service , where any
+					application can register and process its transactions with a
+					guarantee of completion towards commit or rollback.
+				</div>
+			</div>
+			<div class="row">
+				<div class="col-sm-6 col-xs-6" style="margin-top: 50px;">
+					<h4 style="padding-left: 20px; margin-top: 150px;">Our Sample
+						Application</h4>
+				</div>
+				<div class="col-sm-4 col-xs-4" style="margin-top: 50px">
+					<img alt="" src="sample.png" height="40%">
+				</div>
+				<div class="col-sm-4 col-xs-4" style="margin-top: 50px"></div>
+			</div>
+		</div>
+		<div class="section">
+			<div class="row">
+				<h4 style="margin-left: 40px;">SAGA ecosystem</h4>
+				<div class="col-sm-12 col-xs-12">
+					&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+					<img alt="" src="saga.png" width="80%">
+				</div>
+			</div>
+		</div>
+		<div class="section">
+			<h2>&nbsp;&nbsp;&nbsp;&nbsp;Some where in between..</h2>
+			<div class="row">
+				<div class="col-sm-4 col-xs-4"
+					style="margin-top: 3%; border: 1px solid; border-radius: 10px; margin-left: 50px; margin-bottom: 50px;">
+					<img alt="" src="flow1.png" width="100%">
+					<h1>
+						Your transaction is at <span style="color: #19B5FE">Final
+							Step</span> .
+					</h1>
+				</div>
+				<div class="col-sm-6 col-xs-6" style="margin-left: 50px">
+					<div class="row" style="border: 1px solid; border-radius: 10px;">
+						<div class="col-sm-12 col-xs-12">
+							<h5>
+								But it <span style="font-weight: bold; color: red;">fails</span>..
+							</h5>
+							<img alt="" src="flow2.png" width="55%"> What happens then?
+						</div>
+						<span style="font-stretch: condensed;">&nbsp;&nbsp;Compensatory
+							Transactions are initiated.</span>
+					</div>
+					<div class="row"
+						style="border: 1px solid; border-radius: 10px; margin-top: 20px; margin-bottom: 20px;">
+						<h5>
+							&nbsp;&nbsp;Then SAGA server <span
+								style="font-weight: bold; color: red;">fails</span>..
+						</h5>
+						<div class="col-sm-12 col-xs-12">
+							<img alt="" src="flow3.png" width="60%"> What happens then?
+						</div>
+						<span style="font-stretch: condensed;">&nbsp;&nbsp;Compensatory
+							Transactions are completed by other SAGA servers.</span>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>

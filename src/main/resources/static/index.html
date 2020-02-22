@@ -1,0 +1,739 @@
+<html>
+<head>
+<title>Saga Manager</title>
+<script type="text/javascript" src="/local/"></script>
+ 
+<link rel="stylesheet"
+	href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/css/bootstrap.min.css"
+	integrity="sha384-WskhaSGFgHYWDcbwN70/dfYBj47jz9qbsMId/iRN3ewGhXQFZCSftd1LZCfmhktB"
+	crossorigin="anonymous" />
+
+<link
+	href="https://fonts.googleapis.com/css?family=Anton|Ubuntu|Raleway|Abel"
+	rel="stylesheet" />
+<link
+	href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css"
+	rel="stylesheet" />
+<script src="https://code.jquery.com/jquery-3.3.1.js"
+	integrity="sha256-2Kok7MbOyxpgUVvAk/HJ2jigOSYS2auK4Pfzbm7uH60="
+	crossorigin="anonymous"></script>
+<!-- needed for dropdowns bootstrap -->
+<script
+	src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"
+	integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49"
+	crossorigin="anonymous"></script>
+<script
+	src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.1/js/bootstrap.min.js"
+	integrity="sha384-smHYKdLADwkXOn1EmN1qk/HfnUcbVRZyYmZ4qpPea6sjB/pTJ0euyQp0Mk8ck+5T"
+	crossorigin="anonymous"></script>
+
+<script
+	src="https://cdn.datatables.net/1.10.12/js/jquery.dataTables.min.js"></script>
+
+<script
+	src="https://cdn.datatables.net/rowgroup/1.1.0/js/dataTables.rowGroup.min.js"></script>
+<script src="https://kit.fontawesome.com/7ab0502103.js"></script>
+<script type="text/javascript">
+	$(document)
+			.ready(
+					function() {
+
+						function loadSAGADetails(sagaName) {
+							var data;
+							$
+									.ajax({
+										method : 'GET',
+										contentType : "application/json",
+										url : '/saga/' + sagaName,
+										cache : false,
+										async : false,
+										success : function(d) {
+											console.log(data);
+											data = d;
+										},
+										error : function(jqXHR, textStatus,
+												errorThrown) {
+											console.log(jqXHR);
+										}
+									});
+
+							var hmac = '<span class="badge badge-info" style="margin-top: 5px;">'
+									+ (data.hmac ? data.hmac : 'none')
+									+ '</span>';
+							var failoveraction = '<span class="badge badge-info" style="margin-top: 5px;">'
+									+ data.failoverAction + '</span>';
+							return '<i class="fas fa-layer-group"></i>&nbsp'
+									+'<span style="font-family:Raleway;font-size:1.1em;"><span class="badge badge-info">'
+									+ sagaName
+									+ '</span>&nbsp;key : '
+									+ hmac
+									+ '&nbsp; failover : '
+									+ failoveraction
+									+ '</span>'
+									+ '<button class="btn btn-danger btn-sm" style="float:right;font-size: 0.7em;" data-saga="'+sagaName+'" data-toggle="modal" data-target="#confirmDelete">Delete</button>';
+
+						}
+
+						$('#example').DataTable({
+							"ajax" : "/saga",
+							"info" : false,
+							paging : false,
+							"columns" : [ {
+								"data" : "sagaDetails"
+							}, {
+								"data" : "step"
+							}, {
+								"data" : "api"
+							}, {
+								"data" : "capi"
+							}, {
+								"data" : "apiMethod"
+							}, {
+								"data" : "capiMethod"
+							} ],
+							rowGroup : {
+								dataSrc : 'sagaDetails',
+								startRender : function(rows, group) {
+									return loadSAGADetails(group);
+								}
+							},
+							"columnDefs" : [ {
+								"visible" : false,
+								"targets" : [ 0 ]
+							} ]
+						});
+						//			"ajax" : "/transactions/list",
+
+						var txTable = $('#transactionsTable')
+								.DataTable(
+										{
+											"ajax" : "/transactions",
+											"info" : false,
+											paging : false,
+											"columns" : [ {
+												"data" : "tx"
+											}, {
+												"data" : "txStatus"
+											}, {
+												"data" : "step"
+											}, {
+												"data" : "apiPayload"
+											}, {
+												"data" : "apiResponse"
+											}, {
+												"data" : "apiResponseStatus"
+											}, {
+												"data" : "capiPayload"
+											}, {
+												"data" : "capiResponse"
+											}, {
+												"data" : "capiResponseStatus"
+											}, {
+												"data" : "status"
+											} ],
+											rowGroup : {
+												dataSrc : 'tx',
+												startRender : function(rows,
+														group) {
+													return '<i class="fas fa-layer-group"></i>&nbsp;<span class="badge badge-info" style="font-size:0.9em;">'+group+'</span>&nbsp;'+
+													'Status : <span class="badge badge-info" style="font-size:0.9em;">'+rows.data().pop()["txStatus"]+'</span>'; 
+												}
+											},
+											"columnDefs" : [ {
+												"visible" : false,
+												"targets" : [ 0,1 ]
+											} ]
+										});
+
+						$('#confirmDelete').on(
+								'show.bs.modal',
+								function(event) {
+									var saga = $(event.relatedTarget).data(
+											'saga');
+									$("#sagaToDelete").html(saga);
+								});
+						loadSAGAList();
+						loadEnvProperties();
+					});
+
+	function deleteSAGA() {
+		var data = {
+			saga : $("#sagaToDelete").html()
+		};
+		$
+				.ajax({
+					method : 'DELETE',
+					contentType : "application/json",
+					url : '/saga',
+					data : JSON.stringify(data),
+					cache : false,
+					success : function(data) {
+						$("#messageBoxDelete").removeClass('alert-danger');
+						$("#messageBoxDelete").addClass('alert-success');
+						$("#messageBoxDelete")
+								.html(
+										$("#sagaToDelete").html()
+												+ " deleted successfully."
+												+ '<a href="#" class="close" onclick="$(\'.alert\').hide().html(\'\')">&times;</a>');
+						$("#messageBoxDelete").show();
+						$('#example').DataTable().ajax.reload();
+					},
+					error : function(jqXHR, textStatus, errorThrown) {
+						$("#messageBoxDelete")
+								.removeClass('alert-success');
+						$("#messageBoxDelete").addClass('alert-danger');
+						if (jqXHR.status == 406) {
+							$("#messageBoxDelete")
+									.html(
+											jqXHR.responseText
+													+ '<a href="#" class="close" onclick="$(\'.alert\').hide().html(\'\')">&times;</a>');
+						} else {
+							$("#messageBoxDelete")
+									.html(
+											"Something went wrong."
+													+ '<a href="#" class="close" onclick="$(\'.alert\').hide().html(\'\')">&times;</a>');
+						}
+						$("#messageBoxDelete").show();
+					}
+				});
+		$('#confirmDelete').modal('hide');
+	};
+
+	function addStep() {
+		try {
+			data = {
+				saga : $("#saga").html(),
+				step : $("#step").val(),
+				apiPath : $("#apiPath").val(),
+				capiPath : $("#capiPath").val(),
+				apiMethod : $("#apiMethod").val(),
+				capiMethod : $("#capiMethod").val()
+			};
+			console.log(data);
+			$
+					.ajax({
+						method : 'POST',
+						contentType : "application/json",
+						url : '/saga/step',
+						data : JSON.stringify(data),
+						cache : false,
+						success : function(data) {
+							$("#messageBox").removeClass('alert-danger');
+							$("#messageBox").addClass('alert-success');
+							$("#messageBox")
+									.html(
+											"Step added successfully."
+													+ '<a href="#" class="close" onclick="$(\'.alert\').hide().html(\'\')">&times;</a>');
+							$("#messageBox").show();
+							$('#example').DataTable().ajax.reload();
+						},
+						error : function(jqXHR, textStatus, errorThrown) {
+							$("#messageBox").removeClass('alert-success');
+							$("#messageBox").addClass('alert-danger');
+							if (jqXHR.status == 406) {
+								$("#messageBox")
+										.html(
+												jqXHR.responseText
+														+ '<a href="#" class="close" onclick="$(\'.alert\').hide().html(\'\')">&times;</a>');
+							} else {
+								$("#messageBox")
+										.html(
+												"Something went wrong."
+														+ '<a href="#" class="close" onclick="$(\'.alert\').hide().html(\'\')">&times;</a>');
+							}
+							$("#messageBox").show();
+						}
+					});
+			//
+		} catch (e) {
+
+		}
+	}
+
+	function createSAGA() {
+		data = {
+			saga : $("#sagaName").val(),
+			hmacSecured : $("#hmacSecured:checked").val(),
+			failoverAction : $("#failoverAction").html()
+		};
+		console.log(data);
+		$
+				.ajax({
+					method : 'POST',
+					contentType : "application/json",
+					url : '/saga',
+					data : JSON.stringify(data),
+					cache : false,
+					success : function(data) {
+						$("#messageBoxSAGA").removeClass('alert-danger');
+						$("#messageBoxSAGA").addClass('alert-success');
+						$("#messageBoxSAGA")
+								.html(
+										"SAGA created successfully."
+												+ '<a href="#" class="close" onclick="$(\'.alert\').hide().html(\'\')">&times;</a>');
+						$("#messageBoxSAGA").show();
+						loadSAGAList();
+						$('#example').DataTable().ajax.reload();
+					},
+					error : function(jqXHR, textStatus, errorThrown) {
+						$("#messageBoxSAGA").removeClass('alert-success');
+						$("#messageBoxSAGA").addClass('alert-danger');
+						if (jqXHR.status == 406) {
+							$("#messageBoxSAGA")
+									.html(
+											jqXHR.responseText
+													+ '<a href="#" class="close" onclick="$(\'.alert\').hide().html(\'\')">&times;</a>');
+						} else {
+							$("#messageBoxSAGA")
+									.html(
+											"Something went wrong."
+													+ '<a href="#" class="close" onclick="$(\'.alert\').hide().html(\'\')">&times;</a>');
+						}
+						$("#messageBoxSAGA").show();
+					}
+				});
+	}
+
+	function reloadTx() {
+		$('#transactionsTable').DataTable().ajax.reload();
+	}
+
+	function loadSAGAList() {
+		$("#sagaDropDown").html('');
+		$("#saga").html('');
+		$.ajax({
+			method : 'GET',
+			contentType : "application/json",
+			url : '/saga/names',
+			cache : false,
+			success : function(data) {
+				console.log(data);
+				if (!data[0])
+					data[0] = 'None';
+				$("#saga").html(data[0]);
+				data.forEach(function(name) {
+					$("#sagaDropDown").append(
+							'<a class="dropdown-item" onClick="selectSAGA(this)">'
+									+ name + '</a>');
+				});
+			},
+			error : function(jqXHR, textStatus, errorThrown) {
+				console.log(jqXHR);
+			}
+		});
+	}
+	
+	
+	function loadEnvProperties() {
+		$("#sagaDropDown").html('');
+		$("#saga").html('');
+		$.ajax({
+			method : 'GET',
+			contentType : "application/json",
+			url : '/actuator/env',
+			cache : false,
+			success : function(data) {
+				data.propertySources.forEach(function(propertySource) {
+					if(propertySource.name.indexOf('applicationConfig')!==-1){
+						for (var property in propertySource.properties){
+							$("#secTable").find('tbody')
+						    .append($('<tr>')
+						        .append($('<td>')
+						            .append(property))
+						         .append($('<td>')
+							        .append(propertySource.properties[property].value))
+						    );
+						}
+					}
+				});
+			},
+			error : function(jqXHR, textStatus, errorThrown) {
+				console.log(jqXHR);
+			}
+		});
+	}
+	
+
+	function selectSAGA(selected) {
+		$('#saga').html($(selected).html());
+	};
+	
+	function updateFailOverAction(link){
+		$("#failoverAction").html($(link).html());
+	}
+</script>
+</head>
+<body>
+	<div class="container-fluid"
+		style="font-size: 0.9em; font-family: ubuntu;">
+		<div class="row">
+			<ul
+				class="col-xs col-sm navbar  nav-pills navbar-expand-lg navbar-light bg-light nav-tabs nav"
+				id="myTab" role="tablist">
+				<li class="nav-item"><a class="nav-link active" id="sagas-tab"
+					data-toggle="tab" href="#sagas" role="tab" aria-controls="sagas"
+					aria-selected="true">Configure SAGA&nbsp;<i class="fas fa-layer-group"></i></a></li>
+				<li class="nav-item"><a class="nav-link" id="transactions-tab"
+					data-toggle="tab" href="#transactions" role="tab"
+					aria-controls="transactions" aria-selected="false">Transactions</a></li>
+				<li class="nav-item"><a class="nav-link" id="ecConfig"
+					data-toggle="tab" href="#secConfig" role="tab"
+					aria-controls="ecConfig" aria-selected="false">System Properties</a></li>
+			</ul>
+			<ul
+				class="col-xs-3 col-sm-3 navbar  nav-pills navbar-expand-lg navbar-light bg-light nav-tabs nav"
+				id="myTab" role="tablist"
+				style="text-align: right; font-size: small;">
+		<!-- 		<li><br>Server configuration : HA &nbsp;&nbsp;Service
+					Discovery : Enabled</li> -->
+			</ul>
+			<ul
+				class="col-xs-2 col-sm-2 navbar  nav-pills navbar-expand-lg navbar-light bg-light nav-tabs nav"
+				id="myTab" role="tablist">
+				<li>
+					<div class="row">
+						<div class="col-sm-10 col-xs-10"
+							style="text-align: right; font-weight: bold;"><i class="fas fa-layer-group"></i>&nbsp;Saga Manager</div>
+					</div>
+					<div class="row">
+						<div class="col-sm-10 col-xs-10" style="text-align: right;">Welcome,
+							Admin</div>
+						<div class="col-sm-2 col-xs-2">
+							<a href="/logout" style="color: red"><i
+								class="fas fa-sign-out-alt" style="font-size: x-large;"></i></a>
+						</div>
+					</div>
+				</li>
+			</ul>
+		</div>
+		<div class="tab-content" id="myTabContent">
+			<div class="tab-pane fade show active" id="sagas" role="tabpanel"
+				aria-labelledby="sagas-tab">
+
+				<div class="card" style="margin-top: 20px;">
+					<div class="card-header" id="headingOne"
+						style="background: #FFEDA9">
+						<h5 class="mb-0">
+							<button class="btn btn-link" data-toggle="collapse"
+								data-target="#collapseOne" aria-expanded="true"
+								aria-controls="collapseOne" style="color: black;">1.
+								Create SAGA&nbsp;<i class="fas fa-layer-group"></i></button>
+						</h5>
+					</div>
+
+					<div id="collapseOne" class="collapse" aria-labelledby="headingOne">
+						<div class="card-body">
+							<div class="alert alert-danger" id="messageBoxSAGA"
+								style="display: none;">
+								<a href="#" class="close" onclick="$('.alert').hide().html('');">&times;</a>
+							</div>
+							<!-- form starts -->
+							<div class="row"
+								style="margin: 10px; padding: 20px; border: 1px solid; border-radius: 5px; border-color: #e0ebeb; background-color: #e0ebeb; margin-top: 10px;">
+								<div class="col-sm-12 col-xs-12">
+									<div class="row">
+										<div class="col-sm-2 col-xs-2">
+											<label for="sagaName">Saga Name</label>
+										</div>
+										<div class="col-sm-2 col-xs-2">
+											<input type="text" class="form-control" id="sagaName">
+										</div>
+										<div class="col-sm col-xs">
+											<p style="font-size: small;">
+												Please provide only Alphabetic names without any space. This
+												name will be used AS IS when performing any transaction for
+												this SAGA. <br>Usage Example : If SAGA name is
+												createOrder then the execution of this SAGA will be
+												initiated by POST request to <span class="badge badge-dark">http(s)://saga-server-url/transaction/createOrder</span>.
+											</p>
+										</div>
+									</div>
+									<div class="row">
+										<div class="col-sm-2 col-xs-2">
+											<label for="hmacSecured">HMAC Secured</label>
+										</div>
+										<div class="col-sm-2 col-xs-2">
+											<input type="checkbox" name="hmacSecured" id="hmacSecured">
+										</div>
+										<div class="col-sm col-xs">
+											<p style="font-size: small;">
+												Select this checkbox to mandate HMAC verification for all
+												the transactions for this SAGA. Selecting this checkbox will
+												generate a Base64 encoded secret key which should be used to
+												generate HMAC_SHA256 of payload. This HMAC should be passed
+												in Authorization header as Bearer token. <br> Usage
+												example : If Generated secret is <span
+													class="badge badge-dark">1aTWTZhtDkdRzboA6f1TTLjpm7F1xtfGjGW0lAWN5fU=</span>
+												then the request for <span class="badge badge-dark">http(s)://saga-server-url/transaction/createOrder</span>
+												should be <span class="badge badge-dark">Authorization:
+													Bearer hmac hmac_sha256Digest</span> where <span
+													class="badge badge-dark">hmac_sha256 =
+													fnHMAC_SHA256('1aTWTZhtDkdRzboA6f1TTLjpm7F1xtfGjGW0lAWN5fU='
+													,payload)</span>
+											</p>
+										</div>
+									</div>
+									<div class="row">
+										<div class="col-sm-2 col-xs-2">
+											<label for="failOverAction">Failover Action</label>
+										</div>
+										<div class="col-sm-2 col-xs-2">
+											<div class="btn-group">
+												<button class="btn btn-secondary btn-sm dropdown-toggle"
+													type="button" data-toggle="dropdown" aria-haspopup="true"
+													aria-expanded="false" id="failoverAction"
+													name="failoverAction">Rollback</button>
+												<div class="dropdown-menu">
+													<a class="dropdown-item" onclick="updateFailOverAction(this)">Continue</a> <a
+														class="dropdown-item" onclick="updateFailOverAction(this)">Reprocess</a> <a
+														class="dropdown-item" onclick="updateFailOverAction(this)">None</a>
+														<a class="dropdown-item" onclick="updateFailOverAction(this)">Rollback</a> 
+												</div>
+											</div>
+										</div>
+										<div class="col-sm col-xs">
+											<p style="font-size: small;">
+												Failover action determines how the pending transactions are
+												executed in case SAGA server goes down or a transaction is
+												left incomplete due to some reason. In HA setup one of the
+												SAGA server will pick the pending transaction and continue
+												the execution after some delay. In case SAGA server is
+												running in-memory pending transactions are likely to be
+												picked up when SAGA server comes up, unless the Zookeeper
+												directory is not tampered with. <span style="color: red;">This
+													configuration is not recomended for production use</span>.<br>
+												<span class="badge badge-info" style="margin-top: 5px;">Rollback</span>
+												Compensation APIs are executed for current and each previous
+												step in reverse order of execution.<br> <span
+													class="badge badge-info" style="margin-top: 5px;">Continue</span>
+												Next steps are executed in defined order. If status of the
+												step when SAGA went offline is unknown current step will be
+												executed again. <br> <span class="badge badge-info"
+													style="margin-top: 5px;">Reprocess</span> All the steps
+												will be executed again in the defined order. <br> <span
+													class="badge badge-info" style="margin-top: 5px;">None</span>
+												The transaction will be left as is with status updated as
+												COMPLETED/SUCCESS.
+											</p>
+										</div>
+									</div>
+								</div>
+								<div class="col-sm-12">
+									<div class="text-center">
+										<button class="btn btn-success" id="createSaga"
+											onclick="createSAGA()">Create SAGA</button>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<div class="card" style="margin-top: 20px;">
+					<div class="card-header" id="headingTwo"
+						style="background: #FFF1BA">
+						<h5 class="mb-0">
+							<button class="btn btn-link" data-toggle="collapse"
+								data-target="#collapseTwo" aria-expanded="true"
+								aria-controls="collapseTwo" style="color: black;">2.
+								Add Step</button>
+						</h5>
+					</div>
+
+					<div id="collapseTwo" class="collapse" aria-labelledby="headingTwo">
+						<div class="card-body">
+							<div class="alert alert-danger" id="messageBox"
+								style="display: none;">
+								<a href="#" class="close" onclick="$('.alert').hide().html('');">&times;</a>
+							</div>
+							<div class="input-group"
+								style="padding: 20px; border: 1px solid; border-radius: 5px; border-color: #e0ebeb; background-color: #e0ebeb; margin-top: 10px;">
+								<div class="col-sm-6 col-xs-6">
+									<div class="row">
+										<div class="col-sm-3">
+											<span>SAGA</span>
+										</div>
+										<div class="col-sm-3">
+											<div class="btn-group">
+												<button class="btn btn-secondary btn-sm dropdown-toggle"
+													type="button" data-toggle="dropdown" aria-haspopup="true"
+													aria-expanded="false" id="saga" name="saga"></button>
+												<div class="dropdown-menu" id="sagaDropDown"></div>
+											</div>
+										</div>
+										<div class="col-sm-3">
+											<span>Step Name</span>
+										</div>
+										<div class="col-sm-3">
+											<input type="text" class="form-control" name="step" id="step">
+										</div>
+									</div>
+								</div>
+								<div class="col-sm-6 col-xs-6">
+									<br> <br>
+								</div>
+								<div class="col-sm-6 col-xs-6">
+									<div class="row">
+										<div class="col-sm-3 col-xs-3">
+											<span>API Path</span>
+										</div>
+										<div class="col-sm-3 col-xs-3">
+											<input type="text" name="apiPath" id="apiPath"
+												class="form-control" value="/">
+										</div>
+										<div class="col-sm-3 col-xs-3">
+											<span>CAPI Path</span>
+										</div>
+										<div class="col-sm-3 col-xs-3">
+											<input type="text" name="capiPath" id="capiPath"
+												class="form-control" value="/">
+										</div>
+									</div>
+								</div>
+								<div class="col-sm-6 col-xs-6">
+									<div class="row">
+										<div class="col-sm-3 col-xs-3">
+											<span>API Method</span>
+										</div>
+										<div class="col-sm-3 col-xs-3">
+											<select name="apiMethod" id="apiMethod" class="form-control">
+												<option value="put">PUT</option>
+												<option value="post">POST</option>
+												<option value="delete">DELETE</option>
+											</select>
+										</div>
+										<div class="col-sm-3 col-xs-3">
+											<span>CAPI Method</span>
+										</div>
+										<div class="col-sm-3 col-xs-3">
+											<select name="capiMethod" id="capiMethod"
+												class="form-control">
+												<option value="put">PUT</option>
+												<option value="post">POST</option>
+												<option value="delete">DELETE</option>
+											</select>
+										</div>
+									</div>
+								</div>
+								<div class="col-sm-12 col-xs-12">
+									<div class="row">
+										<div class="col-sm-5 col-xs-5"></div>
+										<div class="col-sm col-xs">
+											<button type="button" class="btn btn-success"
+												style="margin-top: 10px" onclick="addStep()">Add</button>
+										</div>
+										<div class="col-sm-5 col-xs-5"></div>
+									</div>
+								</div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="card" style="margin-top: 20px;">
+					<div class="card-header" id="headingThree"
+						style="background-color: #FFF4C8">
+						<h5 class="mb-0">
+							<button class="btn btn-link" data-toggle="collapse"
+								data-target="#collapseThree" aria-expanded="true"
+								aria-controls="collapseThree" style="color: black;">3.
+								View / Delete</button>
+						</h5>
+					</div>
+
+					<div id="collapseThree" class="collapse show"
+						aria-labelledby="headingThree">
+						<div class="card-body">
+							<div class="alert alert-danger" id="messageBoxDelete"
+								style="display: none;">
+								<a href="#" class="close" onclick="$('.alert').hide().html('');">&times;</a>
+							</div>
+							<table id="example" class="table table-sm"
+								style="width: 100%; padding: 10px; font-size: 1em;">
+								<thead class="thead-dark">
+									<tr>
+										<th>Tx</th>
+										<th>Step <sup>(grouped)</sup></th>
+										<th>API</th>
+										<th>CAPI</th>
+										<th>API Method</th>
+										<th>CAPI Method</th>
+									</tr>
+								</thead>
+							</table>
+						</div>
+					</div>
+				</div>
+			</div>
+			<!-- <div class="tab-pane fade" id="addsaga" role="tabpanel"
+				aria-labelledby="addsaga-tab">..dfdf.</div> -->
+			<div class="tab-pane fade" id="transactions" role="tabpanel"
+				aria-labelledby="transactions-tab">
+				<table id="transactionsTable" class="table table-sm"
+					style="width: 100%; padding: 10px;font-size: 0.9em;">
+					<thead class="thead-dark">
+						<tr>
+							<th>Tx</th>
+							<th>TxStatus</th>
+							<th>Step<sup>(grouped)</sup></th>
+							<th>API Payload</th>
+							<th>API Response</th>
+							<th>API Status</th>
+							<th>CAPI Payload</th>
+							<th>CAPI Response</th>
+							<th>CAPI Status</th>
+							<th>Status</th>
+						</tr>
+					</thead>
+				</table>
+				<br>
+				<center>
+					<button class="btn btn-sm btn-info" onclick="reloadTx()">Reload</button>
+				</center>
+			</div>
+		<div class="tab-pane fade" id="secConfig" role="tabpanel"
+				aria-labelledby="secConfig">
+					<table id="secTable" class="table table-sm"
+					style="width: 100%; padding: 10px;font-size: 0.9em;margin-top: 10px;">
+					<thead class="thead-dark">
+						<tr>
+							<th>Property</th>
+							<th>Value</th>
+						</tr>
+					</thead>
+					<tbody></tbody>
+				</table>
+				<br>
+			</div>
+		</div>
+	</div>
+
+	<div class="modal" tabindex="-1" role="dialog" id="confirmDelete">
+		<div class="modal-dialog" role="document">
+			<div class="modal-content">
+				<div class="modal-header">
+					<h5 class="modal-title">
+						Delete <span id="sagaToDelete"></span>
+					</h5>
+					<button type="button" class="close" data-dismiss="modal"
+						aria-label="Close">
+						<span aria-hidden="true">&times;</span>
+					</button>
+				</div>
+				<div class="modal-body"
+					style="font-family: Ubuntu; font-size: 0.9em">
+					<span style="color: red;">Deleting a SAGA will cause new and
+						pending transaction to error out.</span>It is recommended to delete a
+					SAGA only after the SAGA url is removed from API gateway or the
+					calling application.<br> Do you want to continue?
+				</div>
+				<div class="modal-footer">
+					<button type="button" class="btn btn-danger btn-sm"
+						onclick="deleteSAGA()">Delete</button>
+					<button type="button" class="btn btn-primary btn-sm"
+						data-dismiss="modal">Close</button>
+				</div>
+			</div>
+		</div>
+	</div>
+</body>
+</html>
